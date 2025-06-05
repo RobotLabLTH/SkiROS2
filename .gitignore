@@ -2,4 +2,6 @@
 *.pyc
 *.creator
 *.pddl
+**/.DS_Store
+.colcon
 skiros2_doc/html/*

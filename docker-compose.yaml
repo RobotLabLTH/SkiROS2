@@ -1,0 +1,60 @@
+# Docker Compose file for SkiROS2 development environment
+#
+# Usage:
+#
+# To build the images:
+#   docker compose build
+#
+# To run a specific service by name:
+#   docker compose run <service_name>
+#
+# To open an interactive shell to a running container:
+#   docker exec -it <container_name> bash
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      target: skiros2_ws
+    # Ensures signals are actually passed and reaped in the container for shutdowns.
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#init
+    init: true
+    # Interactive shell
+    stdin_open: true
+    tty: true
+    # Networking and IPC for ROS 2
+    network_mode: host
+    ipc: host
+    #privileged: true
+    environment:
+      # Ensure your ROS 2 system is only visible on the local network
+      - ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+      # If you disable ROS_LOCALHOST_ONLY above, ensure you use a unique domain ID on your network
+      - ROS_DOMAIN_ID=0
+      # Allows graphical programs in the container
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      # Enables FlexBE web UI to work as root inside the container
+      - QTWEBENGINE_DISABLE_SANDBOX=1
+    volumes:
+      # Mount the workshop source code
+      - ./:/skiros2_ws/src/:rw
+      # Mount the colcon build artifacts
+      - .colcon/build/:/delib_ws/build/:rw
+      - .colcon/install/:/delib_ws/install/:rw
+      - .colcon/log/:/delib_ws/log/:rw
+      # Allows graphical programs in the container
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-$HOME/.Xauthority}:/root/.Xauthority
+
+  # Runs tests
+  # TODO: We want to test on workshop problems, but PyRoboSim tests will do for now.
+  #test:
+  #  extends: base
+  #  command: >
+  #    bash -c "
+  #      python3 -m pytest /delib_ws/src/dependencies/pyrobosim/pyrobosim/test/core &&
+  #      colcon test --packages-select pyrobosim_ros --event-handlers console_cohesion+
+  #    "
+  #  profiles: [test]
