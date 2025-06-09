@@ -41,9 +41,9 @@ services:
       # Mount the workshop source code
       - ./:/skiros2_ws/src/:rw
       # Mount the colcon build artifacts
-      - .colcon/build/:/delib_ws/build/:rw
-      - .colcon/install/:/delib_ws/install/:rw
-      - .colcon/log/:/delib_ws/log/:rw
+      - .colcon/build/:/skiros2_ws/build/:rw
+      - .colcon/install/:/skiros2_ws/install/:rw
+      - .colcon/log/:/skiros2_ws/log/:rw
       # Allows graphical programs in the container
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${XAUTHORITY:-$HOME/.Xauthority}:/root/.Xauthority
