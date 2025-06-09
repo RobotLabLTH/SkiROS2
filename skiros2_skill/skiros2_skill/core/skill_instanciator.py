@@ -3,14 +3,14 @@ from collections import defaultdict
 import skiros2_common.tools.logger as log
 from skiros2_common.core.abstract_skill import State
 from copy import deepcopy
-from skiros2_skill.core.skill import SkillDescription
+from skiros2_skill.core.skill import SkillDescription, SkillBase
 from skiros2_common.core.primitive import PrimitiveBase
 from skiros2_skill.core.skill import SkillInterface, SkillDescription, SkillCore
 from skiros2_common.tools.plugin_loader import PluginLoader
-from skiros2_world_model.ros import world_model_interface
+from skiros2_world_model.ros.world_model_interface import WorldModelInterface
 
 class SkillInstanciator:
-    def __init__(self, node: Node, wmi: world_model_interface):
+    def __init__(self, node: Node, wmi: WorldModelInterface):
         self._plugin_manager = PluginLoader()
         self._available_descriptions = {}
         self._available_instances = defaultdict(list) # type: defaultdict[str,list[SkillCore]]
@@ -50,7 +50,13 @@ class SkillInstanciator:
         @brief Assign a description to an abstract skill.
         """
         skill.init(self._wm)
-        skill.setDescription(deepcopy(self.get_description(skill.type)))
+        description = self.get_description(skill.type)
+
+        # This fixes pickling error for deepcopy below when trying to expand a skill and specifying primitive name instead of descriptor name.
+        assert not isinstance(description, PrimitiveBase), "Found primitive skill - not a description that was expected: %s" % skill.type
+        assert not isinstance(description, SkillBase), "Found compound skill - not a description that was expected: %s" % skill.type
+            
+        skill.setDescription(deepcopy(description))
         #log.error("assignDescription", "No instances of type {} found. Debug: {}".format(skill.type, self._available_descriptions.keys()))
 
     def get_instances(self, ptype):
@@ -77,6 +83,7 @@ class SkillInstanciator:
                 to_set = p
                 if not p.hasState(State.Running):  # The skill is available, just go forward
                     break
+                
         if to_set is not None:
             if to_set.hasState(State.Running):  # The skill instance is busy, create a new one
                 to_set = self.duplicate_instance(to_set)
